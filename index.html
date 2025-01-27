@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Score Lookup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            font-size: 1rem;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Score Lookup</h1>
+    <input type="text" id="username" placeholder="Enter Username" />
+    <button onclick="fetchData()">Get Details</button>
+    <div id="output" class="result"></div>
+
+    <script>
+        async function fetchData() {
+            const username = document.getElementById('username').value;
+            if (!username) {
+                alert("Please enter a username.");
+                return;
+            }
+			const url = "https://script.google.com/macros/s/AKfycbz-7bTcEhyLpQErU_R1b6LUR93gpNL1kd9Mys9UlLPYscca0VtLCwtUNMt2ipsto7qGDA/exec?username=" + encodeURIComponent(username);
+            //const url = "https://script.google.com/macros/s/your-web-app-id/exec?username=" + encodeURIComponent(username);
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('output').innerHTML = `<p>${data.error}</p>`;
+                } else {
+                    let result = "<h2>User Details</h2>";
+                    for (const key in data) {
+                        result += `<p><strong>${key}:</strong> ${data[key]}</p>`;
+                    }
+                    document.getElementById('output').innerHTML = result;
+                }
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p>Error fetching data. Please try again.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
