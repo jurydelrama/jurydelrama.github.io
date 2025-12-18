@@ -1,60 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Score Lookup</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0 auto;
-            max-width: 400px;
-        }
-        input, button {
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
-            font-size: 1rem;
-        }
-        .result {
-            margin-top: 20px;
-            text-align: left;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Score Lookup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0 auto;
+      max-width: 400px;
+      padding: 12px;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .result {
+      margin-top: 20px;
+      text-align: left;
+      word-break: break-word;
+    }
+    .muted {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+  </style>
 </head>
 <body>
-    <h1>getRecord</h1>
-    <input type="text" id="username" placeholder="Enter Username" />
-    <button onclick="fetchData()">Show Record</button>
-    <div id="output" class="result"></div>
+  <h1>getRecord</h1>
 
-    <script>
-        async function fetchData() {
-            const username = document.getElementById('username').value;
-            if (!username) {
-                alert("Please enter a username.");
-                return;
-            }
-			const url = "https://script.google.com/macros/s/AKfycbxI6tFDMC0GTbCVjnWkFnlrZQFsqDUPMZ6YW02IkcnTQSqD7ISk8vyWcQZPVXOlJBiyKQ/exec?username=" + encodeURIComponent(username);
-            //const url = "https://script.google.com/macros/s/your-web-app-id/exec?username=" + encodeURIComponent(username);
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+  <input type="text" id="username" placeholder="Enter Username" autocomplete="off" />
+  <button onclick="fetchData()">Show Record</button>
 
-                if (data.error) {
-                    document.getElementById('output').innerHTML = `<p>${data.error}</p>`;
-                } else {
-                    let result = "<h2>User Details</h2>";
-                    for (const key in data) {
-                        result += `<p><strong>${key}:</strong> ${data[key]}</p>`;
-                    }
-                    document.getElementById('output').innerHTML = result;
-                }
-            } catch (error) {
-                document.getElementById('output').innerHTML = `<p>Incorrect Code.</p>`;
-            }
+  <div id="output" class="result"></div>
+
+  <script>
+    // IMPORTANT: This must match your Apps Script Web App URL (no query params here)
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbxI6tFDMC0GTbCVjnWkFnlrZQFsqDUPMZ6YW02IkcnTQSqD7ISk8vyWcQZPVXOlJBiyKQ/exec";
+
+    // JSONP callback (Apps Script will call this)
+    function renderData(data) {
+      const out = document.getElementById("output");
+
+      if (!data || typeof data !== "object") {
+        out.innerHTML = "<p>Unexpected response.</p>";
+        return;
+      }
+
+      if (data.error) {
+        out.innerHTML = `<p>${data.error}</p>`;
+        return;
+      }
+
+      let result = "<h2>User Details</h2>";
+      for (const key in data) {
+        let value = data[key];
+
+        // Optional: format PEEREVALUATION like 0.9847 -> 98.47%
+        if (key === "PEEREVALUATION" && typeof value === "number") {
+          value = (value * 100).toFixed(2) + "%";
         }
-    </script>
+
+        result += `<p><strong>${key}:</strong> ${value}</p>`;
+      }
+
+      out.innerHTML = result;
+    }
+
+    function fetchData() {
+      const username = document.getElementById("username").value.trim();
+      const out = document.getElementById("output");
+
+      if (!username) {
+        alert("Please enter a username.");
+        return;
+      }
+
+      out.innerHTML = `<p class="muted">Loading record for <strong>${username}</strong>...</p>`;
+
+      // Build JSONP URL
+      const url =
+        BASE_URL +
+        "?username=" + encodeURIComponent(username) +
+        "&callback=renderData" +
+        "&_=" + Date.now(); // cache-buster
+
+      // Remove any previous JSONP script tag
+      const old = document.getElementById("jsonp");
+      if (old) old.remove();
+
+      // Inject script tag (JSONP)
+      const s = document.createElement("script");
+      s.id = "jsonp";
+      s.src = url;
+      s.onerror = () => {
+        out.innerHTML = "<p>Error fetching data (JSONP load failed). Make sure your Apps Script supports callback= and you redeployed.</p>";
+      };
+
+      document.body.appendChild(s);
+    }
+
+    // Enter key triggers lookup
+    document.getElementById("username").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") fetchData();
+    });
+  </script>
 </body>
 </html>
